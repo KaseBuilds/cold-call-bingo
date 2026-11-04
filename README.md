@@ -15,7 +15,7 @@ Made by an SDR, for SDRs.
 
 ## Run a team "Bingo Friday"
 
-Share the link before a call blitz. Everyone plays their own card. The first to post their BINGO image in the team channel wins coffee.
+Share the link before a call blitz. Everyone plays their own card. The first to post their BINGO image in the team channel wins ( gift of your choice).
 
 ## How it's built
 
