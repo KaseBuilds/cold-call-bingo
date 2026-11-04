@@ -6,7 +6,7 @@ Made by an SDR, for SDRs.
 
 ## Play
 
-**Play free:** _link coming once GitHub Pages is on_
+**Play free:** https://kasebuilds.github.io/cold-call-bingo/
 
 - A fresh card every time you tap **New card**, drawn from a pool of real cold-calling moments
 - Tap a square when it happens to you
