@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cold Call Bingo</title>
+<meta name="description" content="Bingo for SDRs. Tap the squares as your cold calls go sideways. Five in a row wins.">
+<meta property="og:title" content="Cold Call Bingo">
+<meta property="og:description" content="Made by an SDR, for SDRs. Tap the squares as your cold calls go sideways.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<!-- ANALYTICS: when hosted on your own site, paste your GoatCounter line here (see README). -->
+<style>
+  :root{
+    --bg:#FFF6E9; --ink:#1B1A2E; --muted:#6B6880; --card:#FFFFFF;
+    --line:#EADFCC; --hit:#FF5A36; --hitInk:#FFFFFF; --free:#1B1A2E; --freeInk:#FFF6E9; --win:#FFD23F;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#14131F; --ink:#F4F1EA; --muted:#A39FB8; --card:#1F1E2E; --line:#2E2C42; --free:#FFD23F; --freeInk:#1B1A2E; }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif}
+  main{max-width:560px;margin:0 auto;padding:20px 14px 40px}
+  header{text-align:center;margin-bottom:14px}
+  h1{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:clamp(34px,10vw,52px);line-height:.95;margin:0;letter-spacing:-.02em}
+  h1 span{color:var(--hit)}
+  h2.sec{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:24px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:14px;margin:8px 0 0}
+  .letters,.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+  .letters div{text-align:center;font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:22px;padding:4px 0}
+  .cell{
+    position:relative;aspect-ratio:1/1;border:2px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);
+    font:600 clamp(9px,2.7vw,12.5px)/1.15 Inter,sans-serif;padding:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+    cursor:pointer;transition:transform .12s ease, background .15s ease;-webkit-tap-highlight-color:transparent;hyphens:manual;overflow-wrap:anywhere;overflow:hidden
+  }
+  .cell small{display:block;font-weight:400;font-size:.78em;opacity:.7;margin-top:2px}
+  .cell:active{transform:scale(.94)}
+  .cell.on{background:var(--hit);border-color:var(--hit);color:var(--hitInk);transform:rotate(-2deg)}
+  .cell.free{background:var(--free);border-color:var(--free);color:var(--freeInk);font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:clamp(11px,3.2vw,15px);cursor:default}
+  .cell.line{box-shadow:0 0 0 3px var(--win)}
+  .bar{display:flex;gap:8px;margin-top:16px}
+  button.btn{flex:1;border:0;border-radius:999px;padding:13px 10px;font:600 15px Inter,sans-serif;cursor:pointer}
+  .primary{background:var(--ink);color:var(--bg)}
+  .ghost{background:transparent;color:var(--ink);border:2px solid var(--ink)!important}
+  .count{text-align:center;color:var(--muted);font-size:13px;margin-top:12px}
+
+  .submit{margin-top:32px;background:var(--card);border:2px solid var(--line);border-radius:20px;padding:18px}
+  .submit p{color:var(--muted);font-size:14px;margin:0 0 12px}
+  .submit label{display:block;font-size:13px;font-weight:600;margin:10px 0 4px}
+  .submit input{width:100%;padding:12px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--ink);font:400 16px Inter,sans-serif}
+  .submit input:focus{outline:none;border-color:var(--hit)}
+  .submit .hint{font-size:12px;color:var(--muted);margin-top:4px;text-align:right}
+  .submit .btn{margin-top:14px;width:100%}
+  .submit .msg{font-size:14px;margin-top:10px;min-height:20px}
+
+  .overlay{position:fixed;inset:0;background:rgba(20,19,31,.78);display:none;align-items:center;justify-content:center;padding:16px;z-index:10;overflow:auto}
+  .overlay.show{display:flex}
+  .win{background:var(--win);color:#1B1A2E;border-radius:24px;padding:22px 18px;max-width:380px;width:100%;text-align:center;animation:pop .35s cubic-bezier(.2,1.6,.4,1)}
+  .win h2{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:52px;margin:0;line-height:1}
+  .win p{margin:8px 0 12px;font-size:15px}
+  .win img{width:100%;border-radius:14px;display:block;box-shadow:0 6px 20px rgba(0,0,0,.18)}
+  .win .tip{font-size:12px;margin:6px 0 4px;opacity:.75}
+  .win .btn{background:#1B1A2E;color:#FFD23F;margin-top:8px;width:100%}
+  .win .btn.alt{background:transparent;color:#1B1A2E;border:2px solid #1B1A2E}
+  .toast{font-size:13px;margin-top:8px;min-height:18px}
+  @keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+  .confetti{position:fixed;top:-10px;width:10px;height:14px;z-index:11;pointer-events:none;animation:fall linear forwards}
+  @keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+  footer{text-align:center;color:var(--muted);font-size:12px;margin-top:22px}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Cold Call <span>Bingo</span></h1>
+    <p class="sub">Tap a square when it happens to you. Five in a row wins.</p>
+  </header>
+
+  <div class="letters" aria-hidden="true"><div>B</div><div>I</div><div>N</div><div>G</div><div>O</div></div>
+  <div class="grid" id="grid" role="grid" aria-label="Bingo card"></div>
+
+  <div class="bar">
+    <button class="btn primary" id="newCard">New card</button>
+    <button class="btn ghost" id="clear">Clear marks</button>
+  </div>
+  <div class="count" id="count"></div>
+
+  <section class="submit" aria-labelledby="submitTitle">
+    <h2 class="sec" id="submitTitle">Submit a square</h2>
+    <p>What's the most cursed thing that's happened on one of your cold calls? The best ones get added to the game, with your first name on the square.</p>
+    <form id="suggestForm" novalidate>
+      <label for="sqText">Your square</label>
+      <input id="sqText" maxlength="60" placeholder="e.g. Prospect answered from a roller coaster" required>
+      <div class="hint"><span id="sqLen">0</span>/60</div>
+      <label for="sqName">First name (for credit, optional)</label>
+      <input id="sqName" maxlength="20" placeholder="e.g. Jess" autocomplete="given-name">
+      <button class="btn primary" type="submit">Send it in</button>
+      <div class="msg" id="sqMsg" role="status"></div>
+    </form>
+  </section>
+
+  <footer id="footer">Made by an SDR, for SDRs. Dial on. ☎️</footer>
+</main>
+
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="winTitle">
+  <div class="win">
+    <h2 id="winTitle">BINGO!</h2>
+    <p id="winText">You survived a full row of cold calling chaos.</p>
+    <img id="shareImg" alt="Your winning bingo card">
+    <div class="tip">On a phone: press and hold the image to save or share it.</div>
+    <button class="btn" id="saveImg">Save image</button>
+    <button class="btn alt" id="copy">Copy brag text</button>
+    <button class="btn alt" id="keep">Keep playing</button>
+    <div class="toast" id="toast" role="status"></div>
+  </div>
+</div>
+
+<script>
+/* ===== SETTINGS: edit these when you launch ===== */
+// Your site's address, printed at the bottom of every share image. Leave "" until you have one.
+const SITE_URL = "";
+// Google Form hookup for "Submit a square" (see README). Leave "" until set up.
+const FORM_ACTION = "";      // e.g. "https://docs.google.com/forms/d/e/XXXX/formResponse"
+const FORM_SQUARE_FIELD = ""; // e.g. "entry.123456789"
+const FORM_NAME_FIELD = "";   // e.g. "entry.987654321"
+
+/* ===== THE SQUARES ===== */
+const POOL = [
+  "“Who gave you this number?”",
+  "“Just send me an email”",
+  "Voicemail box is full",
+  "Gatekeeper made you spell your name twice",
+  "Prospect left the company 2 years ago",
+  "“Is this a sales call?”",
+  "Hung up mid-intro",
+  "Number is a fax machine",
+  "Someone’s kid answered",
+  "Got the “we’re all set”",
+  "Prospect was driving",
+  "“How did you get my cell?”",
+  "Called the main line, got a phone tree",
+  "Pressed 0. Still a robot.",
+  "“Call me back next quarter”",
+  "Prospect actually picked up (shocked)",
+  "Heard a dog barking",
+  "Accidentally called the same person twice",
+  "“We already use a competitor”",
+  "Wrong person, right company",
+  "Mispronounced their name",
+  "They asked what your company does. Fair.",
+  "“I’m in a meeting” (answered anyway)",
+  "Left a voicemail you’re proud of",
+  "Booked a meeting!",
+  "Got a referral to someone else",
+  "Prospect talked longer than you did",
+  "“Put it in writing”",
+  "Heard airport announcements",
+  "Called right as they sat down to lunch",
+  "They thought you were their vendor",
+  "Got told “no” in under 5 seconds",
+  "Line went dead, no idea why",
+  "Your CRM data was wrong",
+  "Rang 10 times, no voicemail",
+  "Spoke to an actual decision maker",
+  "“How long is this going to take?”",
+  "Someone said “bless your heart”",
+  "Prospect was nicer than expected",
+  "Coffee ran out mid-block",
+  "Got their assistant’s assistant",
+  "“We don’t have budget”",
+  "Mistaken for a recruiter",
+  "Background noise: blender",
+  "Prospect asked YOU a question"
+].map(t=>({t, by:""}));
+
+// Community squares you approve go here, with the submitter's first name.
+// Example: {t:"Prospect answered from a roller coaster", by:"Jess"},
+const COMMUNITY = [
+];
+
+/* ===== GAME ===== */
+const ALL = POOL.concat(COMMUNITY.filter(s=>s && s.t));
+const LINES = [];
+for(let r=0;r<5;r++) LINES.push([0,1,2,3,4].map(c=>r*5+c));
+for(let c=0;c<5;c++) LINES.push([0,1,2,3,4].map(r=>r*5+c));
+LINES.push([0,6,12,18,24],[4,8,12,16,20]);
+const FREE = {t:"FREE: you picked up the phone", by:""};
+
+let state = load() || fresh();
+let wonLines = new Set(state.won || []);
+
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function fresh(){
+  const picks = shuffle([...ALL]).slice(0,24);
+  picks.splice(12,0,FREE);
+  const marks = Array(25).fill(false); marks[12]=true;
+  return {squares:picks, marks, won:[]};
+}
+function save(){ try{ localStorage.setItem("ccb2", JSON.stringify({...state, won:[...wonLines]})); }catch(e){} }
+function load(){
+  try{
+    const s=JSON.parse(localStorage.getItem("ccb2"));
+    return (s && Array.isArray(s.squares) && s.squares.length===25 && s.squares.every(x=>x && typeof x.t==="string")) ? s : null;
+  }catch(e){ return null; }
+}
+function lineCells(){
+  const set=new Set();
+  LINES.forEach(l=>{ if(l.every(x=>state.marks[x])) l.forEach(x=>set.add(x)); });
+  return set;
+}
+
+const grid = document.getElementById("grid");
+function render(){
+  grid.innerHTML="";
+  const lc = lineCells();
+  state.squares.forEach((sq,i)=>{
+    const b=document.createElement("button");
+    b.className="cell"+(i===12?" free":"")+(state.marks[i]&&i!==12?" on":"")+(lc.has(i)?" line":"");
+    if(i===12){ b.textContent="FREE ☎️"; b.title="Free square: you picked up the phone"; }
+    else{
+      b.appendChild(document.createTextNode(sq.t));
+      if(sq.by){ const s=document.createElement("small"); s.textContent="from "+sq.by; b.appendChild(s); }
+      b.onclick=()=>toggle(i);
+    }
+    b.setAttribute("aria-pressed", state.marks[i]?"true":"false");
+    grid.appendChild(b);
+  });
+  const n = state.marks.filter(Boolean).length-1;
+  document.getElementById("count").textContent = n===0 ? "Nothing yet. Go dial." : `${n} of 24 squares hit`;
+}
+function toggle(i){
+  state.marks[i]=!state.marks[i];
+  let newWin=false;
+  LINES.forEach((l,k)=>{
+    const done=l.every(x=>state.marks[x]);
+    if(done && !wonLines.has(k)){ wonLines.add(k); newWin=true; }
+    if(!done) wonLines.delete(k);
+  });
+  save(); render();
+  if(newWin) celebrate();
+}
+
+/* ===== SHARE IMAGE ===== */
+function wrap(ctx, text, maxW){
+  const words=text.split(" "), lines=[]; let cur="";
+  for(const w of words){
+    const test=cur?cur+" "+w:w;
+    if(ctx.measureText(test).width>maxW && cur){ lines.push(cur); cur=w; } else cur=test;
+  }
+  if(cur) lines.push(cur);
+  return lines;
+}
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+async function drawShare(){
+  try{ await document.fonts.ready; }catch(e){}
+  const W=1080,H=1350, c=document.createElement("canvas"); c.width=W; c.height=H;
+  const ctx=c.getContext("2d");
+  const head="'Bricolage Grotesque', 'Arial Black', sans-serif", body="Inter, Arial, sans-serif";
+  ctx.fillStyle="#FFF6E9"; ctx.fillRect(0,0,W,H);
+  // Title
+  ctx.textBaseline="alphabetic"; ctx.font=`800 92px ${head}`;
+  const a="Cold Call ", b="BINGO!", wa=ctx.measureText(a).width, wb=ctx.measureText(b).width;
+  const tx=(W-wa-wb)/2; ctx.textAlign="left";
+  ctx.fillStyle="#1B1A2E"; ctx.fillText(a, tx, 140);
+  ctx.fillStyle="#FF5A36"; ctx.fillText(b, tx+wa, 140);
+  ctx.textAlign="center";
+  // Grid
+  const pad=70, gap=12, gx=pad, gy=200, cell=(W-2*pad-4*gap)/5;
+  const lc=lineCells();
+  state.squares.forEach((sq,i)=>{
+    const r=Math.floor(i/5), col=i%5, x=gx+col*(cell+gap), y=gy+r*(cell+gap);
+    const on=state.marks[i], free=i===12;
+    roundRect(ctx,x,y,cell,cell,22);
+    ctx.fillStyle = free ? "#1B1A2E" : on ? "#FF5A36" : "#FFFFFF"; ctx.fill();
+    ctx.lineWidth = lc.has(i) ? 10 : 4;
+    ctx.strokeStyle = lc.has(i) ? "#FFD23F" : (free ? "#1B1A2E" : on ? "#FF5A36" : "#EADFCC"); ctx.stroke();
+    ctx.fillStyle = free ? "#FFF6E9" : on ? "#FFFFFF" : "#1B1A2E";
+    if(free){ ctx.font=`800 34px ${head}`; ctx.fillText("FREE", x+cell/2, y+cell/2+12); return; }
+    let size=24, lines;
+    const fits=()=>lines.length*size*1.22<=cell-24 && lines.every(l=>ctx.measureText(l).width<=cell-18);
+    do{ ctx.font=`600 ${size}px ${body}`; lines=wrap(ctx, sq.t, cell-22); if(fits()) break; size-=1; } while(size>13);
+    const lh=(size+1)*1.22, startY=y+cell/2-(lines.length*lh)/2+lh*0.78;
+    lines.forEach((ln,k)=>ctx.fillText(ln, x+cell/2, startY+k*lh));
+  });
+  // Footer
+  const fy=gy+5*cell+4*gap+90;
+  ctx.fillStyle="#1B1A2E"; ctx.font=`700 40px ${body}`;
+  const n=state.marks.filter(Boolean).length-1;
+  ctx.fillText(`${n} squares survived today ☎️`, W/2, fy);
+  ctx.fillStyle="#6B6880"; ctx.font=`600 30px ${body}`;
+  ctx.fillText(SITE_URL ? `Play free at ${SITE_URL}` : "Made by an SDR, for SDRs", W/2, fy+56);
+  return c;
+}
+
+let shareCanvas=null;
+async function celebrate(){
+  const n = state.marks.filter(Boolean).length-1;
+  document.getElementById("winText").textContent =
+    `${wonLines.size>1?wonLines.size+" lines! ":""}You survived ${n} squares of cold calling chaos.`;
+  document.getElementById("toast").textContent="";
+  const img=document.getElementById("shareImg"); img.removeAttribute("src");
+  document.getElementById("overlay").classList.add("show");
+  confetti();
+  try{ shareCanvas=await drawShare(); img.src=shareCanvas.toDataURL("image/png"); }
+  catch(e){ img.alt="Couldn't draw the image here. Screenshot your card instead!"; }
+}
+function confetti(){
+  const colors=["#FF5A36","#1B1A2E","#FFFFFF","#3BC9DB","#7C5CFF"];
+  for(let i=0;i<60;i++){
+    const c=document.createElement("div"); c.className="confetti";
+    c.style.left=Math.random()*100+"vw"; c.style.background=colors[i%colors.length];
+    c.style.animationDuration=(1.6+Math.random()*1.6)+"s"; c.style.animationDelay=(Math.random()*.4)+"s";
+    document.body.appendChild(c); setTimeout(()=>c.remove(),3800);
+  }
+}
+function toast(msg){ document.getElementById("toast").textContent=msg; }
+
+document.getElementById("saveImg").onclick=async()=>{
+  if(!shareCanvas) return toast("Still drawing, one sec…");
+  const filename="cold-call-bingo.png";
+  // 1) Native share sheet (phones, on your own site)
+  try{
+    const blob=await new Promise(r=>shareCanvas.toBlob(r,"image/png"));
+    const file=new File([blob],filename,{type:"image/png"});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file], title:"Cold Call Bingo", text:"I just got Cold Call Bingo! ☎️"});
+      return toast("Shared!");
+    }
+  }catch(e){ if(e && e.name==="AbortError") return; }
+  // 2) Claude page download capability
+  try{
+    if(window.claude && typeof window.claude.use==="function"){
+      const dl=await window.claude.use("downloads");
+      if(dl){
+        const blob=await new Promise(r=>shareCanvas.toBlob(r,"image/png"));
+        await dl.save({filename, data:blob});
+        return toast("Saved!");
+      }
+    }
+  }catch(e){ return toast("Press and hold the image to save it."); }
+  // 3) Plain download link (your own site)
+  try{
+    const a=document.createElement("a"); a.href=shareCanvas.toDataURL("image/png"); a.download=filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    toast("Downloading… or press and hold the image.");
+  }catch(e){ toast("Press and hold the image to save it."); }
+};
+document.getElementById("keep").onclick=()=>document.getElementById("overlay").classList.remove("show");
+document.getElementById("copy").onclick=async()=>{
+  const hits = state.squares.filter((s,i)=>i!==12 && state.marks[i]).slice(0,3).map(s=>s.t);
+  const text = `🎉 I just got COLD CALL BINGO!\n\nToday's highlights:\n${hits.map(h=>"• "+h).join("\n")}\n\nSDRs, you know. ☎️${SITE_URL?"\nPlay free: "+SITE_URL:""}\n#ColdCallBingo #SalesDevelopment`;
+  try{ await navigator.clipboard.writeText(text); toast("Copied! Paste it with your image."); }
+  catch(e){ toast("Couldn't copy here. Screenshot it instead!"); }
+};
+document.getElementById("newCard").onclick=()=>{ state=fresh(); wonLines=new Set(); save(); render(); };
+document.getElementById("clear").onclick=()=>{ state.marks=state.marks.map((m,i)=>i===12); wonLines=new Set(); save(); render(); };
+
+/* ===== SUBMIT A SQUARE ===== */
+const sqText=document.getElementById("sqText"), sqName=document.getElementById("sqName"), sqMsg=document.getElementById("sqMsg");
+sqText.addEventListener("input",()=>document.getElementById("sqLen").textContent=sqText.value.length);
+document.getElementById("suggestForm").addEventListener("submit", async(e)=>{
+  e.preventDefault();
+  const t=sqText.value.trim(), by=sqName.value.trim();
+  if(t.length<4){ sqMsg.textContent="Give us a little more than that 😄"; return; }
+  if(FORM_ACTION && FORM_SQUARE_FIELD){
+    try{
+      const fd=new URLSearchParams(); fd.append(FORM_SQUARE_FIELD,t); if(FORM_NAME_FIELD) fd.append(FORM_NAME_FIELD,by);
+      await fetch(FORM_ACTION,{method:"POST",mode:"no-cors",body:fd});
+      sqMsg.textContent="Got it! If it makes the cut, it'll show up on cards"+(by?` with "from ${by}".`:".");
+      sqText.value=""; document.getElementById("sqLen").textContent="0";
+      return;
+    }catch(err){ /* fall through */ }
+  }
+  sqMsg.textContent="Submissions open soon! Drop your square in the comments of the launch post.";
+  try{ await navigator.clipboard.writeText(`Cold Call Bingo square: ${t}${by?" (from "+by+")":""}`);
+       sqMsg.textContent="Submissions open soon! Your square is copied, so you can drop it in the comments of the launch post."; }catch(err){}
+});
+
+render();
+</script>
+</body>
+</html>
