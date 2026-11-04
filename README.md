@@ -33,7 +33,7 @@ All settings are at the top of the `<script>` in `index.html`:
 
 **Hooking up the Google Form:** make a form with two short-answer questions ("Your square", "First name"). Click ⋮ → *Get pre-filled link*, fill both with test text, copy the link. The `entry.NNNN` numbers in it are your field IDs. Take the form's URL, swap `/viewform` for `/formResponse`, and that's `FORM_ACTION`.
 
-**Page counts (optional):** sign up free at goatcounter.com, then paste its one-line script where `index.html` says `ANALYTICS`.
+**Page counts:** GoatCounter at kasebuilds.goatcounter.com. Tracks page views plus events: bingo-win, save-image, copy-brag, submit-square, new-card.
 
 ## License
 

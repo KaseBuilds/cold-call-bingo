@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-<!-- ANALYTICS: when hosted on your own site, paste your GoatCounter line here (see README). -->
+<script data-goatcounter="https://kasebuilds.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 <style>
   :root{
     --bg:#FFF6E9; --ink:#1B1A2E; --muted:#6B6880; --card:#FFFFFF;
@@ -180,6 +180,7 @@ const COMMUNITY = [
 ];
 
 /* ===== GAME ===== */
+function track(name){ try{ if(window.goatcounter && window.goatcounter.count) window.goatcounter.count({path:name, title:name, event:true}); }catch(e){} }
 const ALL = POOL.concat(COMMUNITY.filter(s=>s && s.t));
 const LINES = [];
 for(let r=0;r<5;r++) LINES.push([0,1,2,3,4].map(c=>r*5+c));
@@ -305,6 +306,7 @@ async function celebrate(){
   const img=document.getElementById("shareImg"); img.removeAttribute("src");
   document.getElementById("overlay").classList.add("show");
   confetti();
+  track("bingo-win");
   try{ shareCanvas=await drawShare(); img.src=shareCanvas.toDataURL("image/png"); }
   catch(e){ img.alt="Couldn't draw the image here. Screenshot your card instead!"; }
 }
@@ -320,6 +322,7 @@ function confetti(){
 function toast(msg){ document.getElementById("toast").textContent=msg; }
 
 document.getElementById("saveImg").onclick=async()=>{
+  track("save-image");
   if(!shareCanvas) return toast("Still drawing, one sec…");
   const filename="cold-call-bingo.png";
   // 1) Native share sheet (phones, on your own site)
@@ -351,12 +354,13 @@ document.getElementById("saveImg").onclick=async()=>{
 };
 document.getElementById("keep").onclick=()=>document.getElementById("overlay").classList.remove("show");
 document.getElementById("copy").onclick=async()=>{
+  track("copy-brag");
   const hits = state.squares.filter((s,i)=>i!==12 && state.marks[i]).slice(0,3).map(s=>s.t);
   const text = `🎉 I just got COLD CALL BINGO!\n\nToday's highlights:\n${hits.map(h=>"• "+h).join("\n")}\n\nSDRs, you know. ☎️${SITE_URL?"\nPlay free: "+SITE_URL:""}\n#ColdCallBingo #SalesDevelopment`;
   try{ await navigator.clipboard.writeText(text); toast("Copied! Paste it with your image."); }
   catch(e){ toast("Couldn't copy here. Screenshot it instead!"); }
 };
-document.getElementById("newCard").onclick=()=>{ state=fresh(); wonLines=new Set(); save(); render(); };
+document.getElementById("newCard").onclick=()=>{ track("new-card"); state=fresh(); wonLines=new Set(); save(); render(); };
 document.getElementById("clear").onclick=()=>{ state.marks=state.marks.map((m,i)=>i===12); wonLines=new Set(); save(); render(); };
 
 /* ===== SUBMIT A SQUARE ===== */
@@ -370,6 +374,7 @@ document.getElementById("suggestForm").addEventListener("submit", async(e)=>{
     try{
       const fd=new URLSearchParams(); fd.append(FORM_SQUARE_FIELD,t); if(FORM_NAME_FIELD) fd.append(FORM_NAME_FIELD,by);
       await fetch(FORM_ACTION,{method:"POST",mode:"no-cors",body:fd});
+      track("submit-square");
       sqMsg.textContent="Got it! If it makes the cut, it'll show up on cards"+(by?` with "from ${by}".`:".");
       sqText.value=""; document.getElementById("sqLen").textContent="0";
       return;
